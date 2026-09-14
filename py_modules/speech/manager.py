@@ -129,12 +129,27 @@ class TTSManager:
                     if self._provider_name != v:
                         self._provider_name = v
                         dirty = True
+                        # Provider trocou: força voz padrão compatível para
+                        # não ficar voz do Edge no Piper (ou vice-versa)
+                        if v == "piper":
+                            default_voice = DEFAULT_VOICE
+                        elif v == "edge":
+                            default_voice = "pt-BR-FranciscaNeural"
+                        else:
+                            default_voice = self._voice
+                        if default_voice != self._voice:
+                            self._voice = default_voice
+                            dirty = True
 
             if "tts_ptbr_voice" in settings:
                 v = str(settings["tts_ptbr_voice"])
                 if self._voice != v:
-                    self._voice = v
-                    dirty = True
+                    # Valida voz por provider: Piper só aceita vozes conhecidas
+                    if self._provider_name == "piper" and v not in ("pt_BR-faber-medium",):
+                        logger.warning(f"Voz {v} inválida para provider piper; mantendo {self._voice}")
+                    else:
+                        self._voice = v
+                        dirty = True
 
             if "tts_speed" in settings:
                 try:

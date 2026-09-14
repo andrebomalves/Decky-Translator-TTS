@@ -2774,9 +2774,12 @@ class Plugin:
             logger.error(f"Error deleting RapidOCR models: {e}")
             return False
 
-    async def test_tts_voice(self, text: str = "Ola, teste de voz em portugues do Brasil."):
+    async def test_tts_voice(self, text=None):
         """Testa sintese TTS. Stub ate implementacao Piper/Edge/OmniVoice completa (F2/F3)."""
         try:
+            # Frontend pode mandar dict (e.g. {"text": "..."}); normaliza seguro
+            if isinstance(text, dict):
+                text = text.get("text") or text.get("message") or text.get("content")
             preview = (text or "").strip()[:400] or "Ola, teste de voz em portugues do Brasil."
             provider = getattr(self, "_tts_provider", "piper")
             voice = getattr(self, "_tts_ptbr_voice", "pt_BR-faber-medium")

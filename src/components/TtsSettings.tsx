@@ -111,6 +111,20 @@ export const TtsSettings: VFC = () => {
     const updateSetting = useCallback(async (key: keyof TtsSettings, value: any) => {
         setTtsSettings(prev => ({ ...prev, [key]: value }));
         try {
+            // Ao trocar provider, força voz padrão compatível (evita voz do Edge no Piper e vice-versa)
+            if (key === 'tts_provider' && value !== ttsSettings.tts_provider) {
+                const defaultVoice = value === 'piper'
+                    ? 'pt_BR-faber-medium'
+                    : value === 'edge'
+                        ? 'pt-BR-FranciscaNeural'
+                        : ttsSettings.tts_ptbr_voice;
+                if (defaultVoice !== ttsSettings.tts_ptbr_voice) {
+                    setTtsSettings(prev => ({ ...prev, tts_ptbr_voice: defaultVoice }));
+                    await call<[Record<string, any>], boolean>('set_tts_settings', { tts_provider: value, tts_ptbr_voice: defaultVoice });
+                    loadSettings();
+                    return;
+                }
+            }
             await call<[Record<string, any>], boolean>('set_tts_settings', { [key]: value });
             // Refresh to pick up any server-side normalization (e.g. masked key)
             if (key !== 'online_api_key') {
@@ -119,7 +133,7 @@ export const TtsSettings: VFC = () => {
         } catch (error) {
             console.error(`[TtsSettings] Failed to set ${key}:`, error);
         }
-    }, [loadSettings]);
+    }, [ttsSettings, loadSettings]);
 
     const handleTestVoice = useCallback(async () => {
         if (!testText.trim()) return;
